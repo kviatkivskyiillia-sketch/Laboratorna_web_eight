@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="Author" content="Квятківський Ілля Юрійович">
+    <title>Лабораторна робота №8</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        canvas {
+            border: 2px dashed red;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .controls {
+            margin-top: 15px;
+        }
+        button {
+            cursor: pointer;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    
+    <h2>Лабораторна робота: Canvas</h2>
+    <p>Натисніть на графік, щоб додати ромб.</p>
+    
+    <div class="controls">
+        <button onclick="toggleAnimation()">Почати / Зупинити рух фігур</button>
+        <button onclick="addRedDiamond()">Додати червону фігуру</button>
+    </div>
+
+    <canvas id="drawingCanvas" width="800" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById("drawingCanvas");
+        const context = canvas.getContext("2d");
+        const xm = canvas.width;
+        const ym = canvas.height;
+        const xc = xm / 2;
+        const yc = ym / 2;
+        const koef = 50;
+        let customDiamonds = [];
+        let redDiamondAdded = false;
+        let isAnimating = false;
+        let moveOffset = 0;
+        let rotationAngle = 0;
+        let moveDirection = 1;
+
+        window.onload = function() {
+            canvas.addEventListener("mousedown", doMouseDown, false);
+            drawScene();
+        };
+
+        function drawScene() {
+            context.clearRect(0, 0, xm, ym);
+            
+            drawAxes();
+            
+            context.save();
+            let triangleX = xc + 2 * koef + moveOffset; 
+            let triangleY = yc - 1 * koef;
+            context.translate(triangleX, triangleY);
+            if (isAnimating) {
+                context.translate(koef, 0);
+                context.rotate(rotationAngle);
+                context.translate(-koef, 0);
+            }
+            context.beginPath();
+            context.moveTo(0, 0);
+            context.lineTo(2 * koef, 0);
+            context.lineTo(1 * koef, -1 * koef);
+            context.closePath();
+            context.fillStyle = "#ff00ff";
+            context.fill();
+            context.lineWidth = 3;
+            context.strokeStyle = "green";
+            context.stroke();
+            context.restore();
+            context.save();
+            context.translate(xc + 2 * koef, yc + 2 * koef);
+            context.rotate(Math.PI / 3);
+            context.beginPath();
+            context.moveTo(0, 0);
+            context.lineTo(2 * koef, 0);
+            context.lineTo(1 * koef, -1 * koef);
+            context.closePath();
+            context.fillStyle = "#ffff00";
+            context.fill();
+            context.lineWidth = 3;
+            context.strokeStyle = "green";
+            context.stroke();
+            context.restore();
+            context.save();
+            let circleY = yc - 2 * koef - (moveOffset * 0.5);
+            context.beginPath();
+            context.arc(xc - 3 * koef, circleY, 1 * koef, 0, 2 * Math.PI);
+            context.fillStyle = "#ff00ff";
+            context.fill();
+            context.lineWidth = 3;
+            context.strokeStyle = "green";
+            context.stroke();
+            context.restore();
+            context.save();
+            context.translate(xc - 3 * koef, yc - 3 * koef);
+            context.rotate(Math.PI / 5);
+            context.beginPath();
+            context.rect(0, 0, 3 * koef, 1 * koef);
+            context.fillStyle = "rgba(255, 255, 0, 0.5)";
+            context.fill();
+            context.strokeStyle = "green";
+            context.stroke();
+            context.restore();
+            if (redDiamondAdded) {
+                drawCustomDiamond(xc + 3 * koef, yc - 2 * koef, "rgba(255,0,0,0.5)", "orange");
+            }
+            customDiamonds.forEach(diamond => {
+                drawGradientDiamond(diamond.x, diamond.y);
+            });
+        }
+
+        function drawAxes() {
+            context.beginPath();
+            context.lineWidth = 2;
+            context.strokeStyle = "black";
+            context.moveTo(10, yc);
+            context.lineTo(xm - 10, yc);
+            context.lineTo(xm - 15, yc - 5);
+            context.moveTo(xm - 10, yc);
+            context.lineTo(xm - 15, yc + 5);
+            context.moveTo(xc, ym - 10);
+            context.lineTo(xc, 10);
+            context.lineTo(xc - 5, 15);
+            context.moveTo(xc, 10);
+            context.lineTo(xc + 5, 15);
+            context.stroke();
+            context.beginPath();
+            let nx = xc / koef;
+            let ny = yc / koef;
+            for (let i = 1; i < nx; i++) {
+                context.moveTo(xc + i * koef, yc + 5);
+                context.lineTo(xc + i * koef, yc - 5);
+                context.moveTo(xc - i * koef, yc + 5);
+                context.lineTo(xc - i * koef, yc - 5);
+            }
+            for (let i = 1; i < ny; i++) {
+                context.moveTo(xc + 5, yc + i * koef);
+                context.lineTo(xc - 5, yc + i * koef);
+                context.moveTo(xc + 5, yc - i * koef);
+                context.lineTo(xc - 5, yc - i * koef);
+            }
+            context.stroke();
+        }
+
+        function drawCustomDiamond(x, y, fillStyle, strokeStyle) {
+            context.save();
+            context.beginPath();
+            context.lineWidth = 2;
+            context.moveTo(x, y);
+            context.lineTo(x + koef, y + koef);
+            context.lineTo(x, y + 2 * koef);
+            context.lineTo(x - koef, y + koef);
+            context.closePath();
+            context.fillStyle = fillStyle;
+            context.strokeStyle = strokeStyle;
+            context.fill();
+            context.stroke();
+            context.restore();
+        }
+
+        function drawGradientDiamond(x, y) {
+            context.save();
+            context.beginPath();
+            context.lineWidth = 2;
+            context.moveTo(x, y);
+            context.lineTo(x + koef, y + koef);
+            context.lineTo(x, y + 2 * koef);
+            context.lineTo(x - koef, y + koef);
+            context.closePath();
+
+            let my_gradient = context.createLinearGradient(x - koef, y, x + koef, y);
+            my_gradient.addColorStop(0, "yellow");
+            my_gradient.addColorStop(1, "blue");
+            
+            context.fillStyle = my_gradient;
+            context.strokeStyle = "orange";
+            context.fill();
+            context.stroke();
+            context.restore();
+        }
+
+        function doMouseDown(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            customDiamonds.push({ x: x, y: y });
+            
+            if (!isAnimating) drawScene();
+        }
+
+        function addRedDiamond() {
+            redDiamondAdded = true;
+            if (!isAnimating) drawScene();
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            if (isAnimating) {
+                animate();
+            }
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+            moveOffset += 2 * moveDirection;
+            if (moveOffset > 100 || moveOffset < -100) {
+                moveDirection *= -1;
+            }
+
+            rotationAngle += 0.05;
+
+            drawScene();
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
