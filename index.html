@@ -3,229 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="Author" content="Квятківський Ілля Юрійович">
+    <meta name="Author" lang="uk" content="Квятківський Ілля Юрійович">
+    <meta name="Keywords" content="Web - растрова графіка, canvas">
     <title>Лабораторна робота №8</title>
     <style>
-        body {
-            text-align: center;
-        }
-        canvas {
-            border: 2px dashed red;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .controls {
-            margin-top: 15px;
-        }
-        button {
-            cursor: pointer;
-            margin: 0 5px;
-        }
+        canvas { border: 1px dashed red; }
+        button { font-size: 16px; padding: 6px 14px; margin-top: 8px; }
     </style>
 </head>
 <body>
-    
-    <h2>Лабораторна робота: Canvas</h2>
-    <p>Натисніть на графік, щоб додати ромб.</p>
-    
-    <div class="controls">
-        <button onclick="toggleAnimation()">Почати / Зупинити рух фігур</button>
-        <button onclick="addRedDiamond()">Додати червону фігуру</button>
-    </div>
-
-    <canvas id="drawingCanvas" width="800" height="500"></canvas>
+    <canvas id="drawingCanvas" width="660" height="500">
+        Браузер не підтримує тег canvas
+    </canvas>
+    <br>
+    <button onclick="addFigure()">Додати фігуру</button>
 
     <script>
-        const canvas = document.getElementById("drawingCanvas");
-        const context = canvas.getContext("2d");
-        const xm = canvas.width;
-        const ym = canvas.height;
-        const xc = xm / 2;
-        const yc = ym / 2;
-        const koef = 50;
-        let customDiamonds = [];
-        let redDiamondAdded = false;
-        let isAnimating = false;
-        let moveOffset = 0;
-        let rotationAngle = 0;
-        let moveDirection = 1;
-
-        window.onload = function() {
-            canvas.addEventListener("mousedown", doMouseDown, false);
-            drawScene();
-        };
-
-        function drawScene() {
-            context.clearRect(0, 0, xm, ym);
-            
-            drawAxes();
-            
-            context.save();
-            let triangleX = xc + 2 * koef + moveOffset; 
-            let triangleY = yc - 1 * koef;
-            context.translate(triangleX, triangleY);
-            if (isAnimating) {
-                context.translate(koef, 0);
-                context.rotate(rotationAngle);
-                context.translate(-koef, 0);
+        var canvas = document.getElementById("drawingCanvas");
+        var ctx = canvas.getContext("2d");
+        var OFFSET_Y = 70;
+        var extra = [];
+        function keyframes(values, t, dur) {
+            var p = ((t % dur) / dur) * (values.length - 1);
+            var i = Math.floor(p), f = p - i;
+            var a = values[i], b = values[Math.min(i + 1, values.length - 1)];
+            if (Array.isArray(a)) {
+                return a.map(function (v, k) { return v + (b[k] - v) * f; });
             }
-            context.beginPath();
-            context.moveTo(0, 0);
-            context.lineTo(2 * koef, 0);
-            context.lineTo(1 * koef, -1 * koef);
-            context.closePath();
-            context.fillStyle = "#ff00ff";
-            context.fill();
-            context.lineWidth = 3;
-            context.strokeStyle = "green";
-            context.stroke();
-            context.restore();
-            context.save();
-            context.translate(xc + 2 * koef, yc + 2 * koef);
-            context.rotate(Math.PI / 3);
-            context.beginPath();
-            context.moveTo(0, 0);
-            context.lineTo(2 * koef, 0);
-            context.lineTo(1 * koef, -1 * koef);
-            context.closePath();
-            context.fillStyle = "#ffff00";
-            context.fill();
-            context.lineWidth = 3;
-            context.strokeStyle = "green";
-            context.stroke();
-            context.restore();
-            context.save();
-            let circleY = yc - 2 * koef - (moveOffset * 0.5);
-            context.beginPath();
-            context.arc(xc - 3 * koef, circleY, 1 * koef, 0, 2 * Math.PI);
-            context.fillStyle = "#ff00ff";
-            context.fill();
-            context.lineWidth = 3;
-            context.strokeStyle = "green";
-            context.stroke();
-            context.restore();
-            context.save();
-            context.translate(xc - 3 * koef, yc - 3 * koef);
-            context.rotate(Math.PI / 5);
-            context.beginPath();
-            context.rect(0, 0, 3 * koef, 1 * koef);
-            context.fillStyle = "rgba(255, 255, 0, 0.5)";
-            context.fill();
-            context.strokeStyle = "green";
-            context.stroke();
-            context.restore();
-            if (redDiamondAdded) {
-                drawCustomDiamond(xc + 3 * koef, yc - 2 * koef, "rgba(255,0,0,0.5)", "orange");
-            }
-            customDiamonds.forEach(diamond => {
-                drawGradientDiamond(diamond.x, diamond.y);
-            });
+            return a + (b - a) * f;
+        }
+        function rgb(c) {
+            return "rgb(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + ")";
+        }
+
+        function drawSquare(x, y) {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(x, y, 60, 60);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "black";
+            ctx.strokeRect(x, y, 60, 60);
         }
 
         function drawAxes() {
-            context.beginPath();
-            context.lineWidth = 2;
-            context.strokeStyle = "black";
-            context.moveTo(10, yc);
-            context.lineTo(xm - 10, yc);
-            context.lineTo(xm - 15, yc - 5);
-            context.moveTo(xm - 10, yc);
-            context.lineTo(xm - 15, yc + 5);
-            context.moveTo(xc, ym - 10);
-            context.lineTo(xc, 10);
-            context.lineTo(xc - 5, 15);
-            context.moveTo(xc, 10);
-            context.lineTo(xc + 5, 15);
-            context.stroke();
-            context.beginPath();
-            let nx = xc / koef;
-            let ny = yc / koef;
-            for (let i = 1; i < nx; i++) {
-                context.moveTo(xc + i * koef, yc + 5);
-                context.lineTo(xc + i * koef, yc - 5);
-                context.moveTo(xc - i * koef, yc + 5);
-                context.lineTo(xc - i * koef, yc - 5);
+            var xc = 200, yc = 220, k = 60;
+            ctx.strokeStyle = "black";
+            ctx.fillStyle = "black";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(40, yc); ctx.lineTo(610, yc);
+            ctx.moveTo(xc, 410); ctx.lineTo(xc, 15);
+            ctx.stroke();
+   
+            ctx.beginPath();
+            ctx.moveTo(615, yc); ctx.lineTo(600, yc - 5); ctx.lineTo(600, yc + 5); ctx.closePath();
+            ctx.moveTo(xc, 10); ctx.lineTo(xc - 5, 25); ctx.lineTo(xc + 5, 25); ctx.closePath();
+            ctx.fill();
+
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (var i = -2; i <= 7; i++) {
+                if (i === 0) continue;
+                ctx.moveTo(xc + i * k, yc - 5); ctx.lineTo(xc + i * k, yc + 5);
             }
-            for (let i = 1; i < ny; i++) {
-                context.moveTo(xc + 5, yc + i * koef);
-                context.lineTo(xc - 5, yc + i * koef);
-                context.moveTo(xc + 5, yc - i * koef);
-                context.lineTo(xc - 5, yc - i * koef);
+            for (var j = -3; j <= 3; j++) {
+                if (j === 0) continue;
+                ctx.moveTo(xc - 5, yc - j * k); ctx.lineTo(xc + 5, yc - j * k);
             }
-            context.stroke();
+            ctx.stroke();
+            ctx.font = "22px 'Times New Roman', serif";
+            ctx.textAlign = "left";
+            ctx.fillText("Y", 220, 30);
+            ctx.fillText("X", 625, 245);
+            ctx.textAlign = "end";
+            ctx.fillText("0", 180, 245);
+            ctx.fillText("1", 180, 170);
+            ctx.fillText("2", 180, 110);
+            ctx.fillText("-1", 180, 290);
+            ctx.fillText("-2", 180, 350);
+            ctx.textAlign = "start";
+            for (var n = 1; n <= 5; n++) ctx.fillText(String(n), xc + n * k + 10, 245);
         }
 
-        function drawCustomDiamond(x, y, fillStyle, strokeStyle) {
-            context.save();
-            context.beginPath();
-            context.lineWidth = 2;
-            context.moveTo(x, y);
-            context.lineTo(x + koef, y + koef);
-            context.lineTo(x, y + 2 * koef);
-            context.lineTo(x - koef, y + koef);
-            context.closePath();
-            context.fillStyle = fillStyle;
-            context.strokeStyle = strokeStyle;
-            context.fill();
-            context.stroke();
-            context.restore();
+        function drawExtra() {
+            extra.forEach(function (f) {
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(f.rot);
+                ctx.beginPath();
+                if (f.type === "circle") {
+                    ctx.arc(0, 0, f.size / 2, 0, 2 * Math.PI);
+                } else if (f.type === "square") {
+                    ctx.rect(-f.size / 2, -f.size / 2, f.size, f.size);
+                } else if (f.type === "triangle") {
+                    ctx.moveTo(-f.size / 2, f.size / 2);
+                    ctx.lineTo(f.size / 2, f.size / 2);
+                    ctx.lineTo(0, -f.size / 2);
+                    ctx.closePath();
+                } else {
+                    ctx.moveTo(0, -f.size / 2); ctx.lineTo(f.size / 2, 0);
+                    ctx.lineTo(0, f.size / 2); ctx.lineTo(-f.size / 2, 0);
+                    ctx.closePath();
+                }
+                ctx.fillStyle = f.color;
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "black";
+                ctx.stroke();
+                ctx.restore();
+            });
         }
 
-        function drawGradientDiamond(x, y) {
-            context.save();
-            context.beginPath();
-            context.lineWidth = 2;
-            context.moveTo(x, y);
-            context.lineTo(x + koef, y + koef);
-            context.lineTo(x, y + 2 * koef);
-            context.lineTo(x - koef, y + koef);
-            context.closePath();
+        function draw(time) {
+            var t = time / 1000;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(0, OFFSET_Y);
 
-            let my_gradient = context.createLinearGradient(x - koef, y, x + koef, y);
-            my_gradient.addColorStop(0, "yellow");
-            my_gradient.addColorStop(1, "blue");
-            
-            context.fillStyle = my_gradient;
-            context.strokeStyle = "orange";
-            context.fill();
-            context.stroke();
-            context.restore();
+            var col = keyframes([[0,0,255],[255,0,0],[255,255,0],[0,128,0],[0,0,255]], t, 6);
+            ctx.beginPath();
+            ctx.ellipse(380, 160, 120, 60, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = rgb(col);
+            ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.stroke();
+
+            var s = keyframes([1, 1.3, 0.7, 1], t, 4);
+            ctx.save();
+            ctx.translate(320, 280);
+            ctx.scale(s, s);
+            ctx.beginPath(); ctx.arc(0, 0, 60, 0, 2 * Math.PI);
+            ctx.fillStyle = "blue"; ctx.fill(); ctx.stroke();
+            ctx.restore();
+
+            ctx.beginPath(); ctx.arc(440, 280, 60, 0, 2 * Math.PI);
+            ctx.fillStyle = "blue"; ctx.fill(); ctx.stroke();
+            ctx.fillRect(320, 340, 120, 60);
+            ctx.strokeRect(320, 340, 120, 60);
+
+            drawSquare(440, 40);
+            drawSquare(500, 100);
+            drawSquare(200, 280);
+
+            var dx = keyframes([0, 80, 0], t, 3);
+            ctx.save();
+            ctx.translate(dx, 0);
+            drawSquare(500, 280);
+            ctx.restore();
+            ctx.save();
+            ctx.translate(290, 70);
+            ctx.rotate(((t % 5) / 5) * 2 * Math.PI);
+            drawSquare(-30, -30);
+            ctx.restore();
+
+            var sk = keyframes([0, 30, -30, 0], t, 4) * Math.PI / 180;
+            ctx.save();
+            ctx.translate(230, 130);
+            ctx.transform(1, 0, Math.tan(sk), 1, 0, 0);
+            drawSquare(-30, -30);
+            ctx.restore();
+
+            drawAxes();
+
+            extra.forEach(function (f) { f.rot += f.speed; });
+            drawExtra();
+
+            ctx.restore();
+            requestAnimationFrame(draw);
         }
 
-        function doMouseDown(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            
-            customDiamonds.push({ x: x, y: y });
-            
-            if (!isAnimating) drawScene();
+        function addFigure(x, y) {
+            var types = ["circle", "square", "triangle", "diamond"];
+            var colors = ["#ff00ff", "#ffcc00", "#00aa55", "#ff6600", "#00ccff", "#cc0000"];
+            extra.push({
+                type: types[Math.floor(Math.random() * types.length)],
+                color: colors[Math.floor(Math.random() * colors.length)],
+                x: (typeof x === "number") ? x : 40 + Math.random() * 580,
+                y: (typeof y === "number") ? y : 40 + Math.random() * 360,
+                size: 30 + Math.random() * 50,
+                rot: 0,
+                speed: (Math.random() - 0.5) * 0.06
+            });
         }
 
-        function addRedDiamond() {
-            redDiamondAdded = true;
-            if (!isAnimating) drawScene();
-        }
+        canvas.addEventListener("mousedown", function (e) {
+            var r = canvas.getBoundingClientRect();
+            addFigure(e.clientX - r.left, e.clientY - r.top - OFFSET_Y);
+        }, false);
 
-        function toggleAnimation() {
-            isAnimating = !isAnimating;
-            if (isAnimating) {
-                animate();
-            }
-        }
-
-        function animate() {
-            if (!isAnimating) return;
-            moveOffset += 2 * moveDirection;
-            if (moveOffset > 100 || moveOffset < -100) {
-                moveDirection *= -1;
-            }
-
-            rotationAngle += 0.05;
-
-            drawScene();
-            requestAnimationFrame(animate);
-        }
+        requestAnimationFrame(draw);
     </script>
 </body>
 </html>
